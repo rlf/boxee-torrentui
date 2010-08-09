@@ -3,8 +3,11 @@ try:
     import simplejson as json
 except ImportError:
     import json
-import urllib2
 import sys
+
+import socket
+socket.setdefaulttimeout(30)
+import urllib2
 
 
 class TransmissionClientFailure(Exception): pass
@@ -31,7 +34,9 @@ class TransmissionClient(object):
         except urllib2.HTTPError, e:
             if e.code == 409:
                 self.headers['X-Transmission-Session-Id'] = e.info()['X-Transmission-Session-Id']
-                return self.__init__( self.rpcUrl )
+                req = urllib2.Request( self.rpcUrl , {}, self.headers)
+                response = urllib2.urlopen(req)
+                response = response.read()
             else:
                 raise Exception('HTTPError: %s' % e.code )
         except Exception, e:

@@ -26,6 +26,10 @@ if client:
         STATUS.SetLabel("Connection failed, launching configuration.")
         WINDOW.PushState()
         APP.ActivateWindow(14003, params)
+    else:
+        print "Got connection"
+        STATUS.SetVisible(False)
+
 else:
     STATUS.SetLabel("No client found, launching configuration.")
     WINDOW.PushState()
