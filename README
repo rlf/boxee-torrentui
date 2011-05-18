@@ -2,7 +2,10 @@ This is a pluggable torrent UI for Boxee. It is a single interface destined to b
 
 TODO
 ====
-- Fix bug in clicking on a torrent
+- Make authentication work on RTorrent and uTorrent
+- Make AUTO SCAN work on the Boxee Box (ping hosts)
+- Add config-option to control refresh-rate
+- Change use of BrowseMainTitle, Bottom_Feather etc. to also support Boxee Box
 - View list of RSS feeds. Click to start download. Click again to play.
 - Torrent Search. Save to RSS feed.
 
@@ -10,6 +13,5 @@ TODO
 CHANGES
 =======
 
-2010-08-09
-----------
-djay - forked and added recreated missing connect.py
+2011-05-18 rlf  - Added authentication support for Transmission + changed refresh implementation
+2010-08-09 djay - forked and added recreated missing connect.py

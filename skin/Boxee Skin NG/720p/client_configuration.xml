@@ -3,15 +3,9 @@
     <defaultcontrol always="true">9006</defaultcontrol>
     <allowoverlay>no</allowoverlay>
     <onload lang="python"><![CDATA[
-from connect import mc, create_connection, APP, CONFIG, WINDOW, TORRENT_CLIENTS
-PARENT_WINDOW = WINDOW
-WINDOW = mc.GetWindow(14003)
-params = APP.GetLaunchedWindowParameters()
-WINDOW.GetEdit(9001).SetText(params['client_address'])
-WINDOW.GetEdit(9002).SetText(params['client_user'])
-WINDOW.GetEdit(9003).SetText(params['client_pass'])
-WINDOW.GetControl(7000).SetVisible(True)
-WINDOW.GetControl(3000).SetVisible(False)
+from config_ui import mc, load_ui, do_connect, auto_scan, close_ui, select_client
+
+load_ui()
 ]]></onload>
     <controls>
         <include>Common_Background</include>
@@ -19,20 +13,20 @@ WINDOW.GetControl(3000).SetVisible(False)
         <include>Common_Status</include>
         <control type="label"> 
             <include>BrowseMainTitle</include>
-            <label>TORRENTS</label>
+            <label>Client Connection</label>
         </control>
         <control type="group" id="7000">
             <visible>false</visible>
             <include>Dialog_Popup_Animation</include>            
-            <posx>100</posx>
-            <posy>250</posy>
-            <width>1220</width>
-            <height>460</height>
+            <posx>80</posx>
+            <posy>100</posy>
+            <width>1120</width>
+            <height>520</height>
             <control type="image">
                 <posx>0</posx>
                 <posy>0</posy>
-                <width>1100</width>
-                <height>320</height>
+                <width>1120</width>
+                <height>520</height>
                 <texture border="64">action_menu_bg.png</texture>
             </control>
             <control type="group">
@@ -60,7 +54,7 @@ WINDOW.GetControl(3000).SetVisible(False)
                     <enable>true</enable>
                     <posx>16</posx>
                     <posy>228</posy>
-                    <width>160</width>
+                    <width>180</width>
                     <height>54</height>
                     <align>center</align>
                     <aligny>center</aligny>
@@ -77,26 +71,7 @@ WINDOW.GetControl(3000).SetVisible(False)
                     <onleft>9005</onleft>
                     <onright>9004</onright>
                     <onclick lang="python"><![CDATA[
-WINDOW.GetControl(9007).SetVisible(True)
-for name, client in TORRENT_CLIENTS.items():
-    print "Name: %s Client: %s" % (name, client)
-    connection = create_connection(client)
-    if connection:
-        print "Created connection to %s successfully." % name
-        print "Set stored vars - 'client_name':'%s', 'client_address':'%s', 'client_user':'%s', , 'client_pass':'%s'" % (client['name'], client['default_url'], '', '')
-        CONFIG.SetValue('client_name', client['name'])
-        CONFIG.SetValue('client_address', client['default_url'])
-        CONFIG.SetValue('client_user', '')
-        CONFIG.SetValue('client_pass', '')
-        params['client_address'] = client['default_url']
-        params['client_user'] = ''
-        params['client_pass'] = ''
-        WINDOW.PopState()
-        mc.CloseWindow()
-        break
-WINDOW.GetControl(9007).SetVisible(False)
-if not connection:
-    mc.ShowDialogOk("Connection failed", "Could not connect to any torrent clients. Perhaps you require manual settings.")     
+auto_scan()
 ]]></onclick>
                 </control>
                 <control type="multiimage" id="9007">
@@ -137,7 +112,8 @@ if not connection:
                     <onleft>9006</onleft>
                     <onright>-</onright>
                     <onup>9004</onup>
-                    <ondown>9004</ondown>
+                    <ondown>9002</ondown>
+                    <label>-</label>
                 </control>
                 <control type="label">
                     <posx>26</posx>
@@ -150,7 +126,7 @@ if not connection:
                     <textcolor>white</textcolor>
                 </control>
                 <control type="edit" id="9002">
-                    <enable>false</enable>
+                    <enable>true</enable>
                     <description>Username</description>
                     <posx>220</posx>
                     <posy>100</posy>
@@ -169,6 +145,7 @@ if not connection:
                     <onright>-</onright>
                     <onup>9001</onup>
                     <ondown>9003</ondown>
+                    <label>-</label>
                 </control>
                 <control type="label">
                     <posx>26</posx>
@@ -181,8 +158,9 @@ if not connection:
                     <textcolor>white</textcolor>
                 </control>
                 <control type="edit" id="9003">
-                    <enable>false</enable>
+                    <enable>true</enable>
                     <description>Password</description>
+                    <password>true</password>
                     <posx>220</posx>
                     <posy>160</posy>
                     <width>350</width>
@@ -200,6 +178,7 @@ if not connection:
                     <onright>-</onright>
                     <onup>9002</onup>
                     <ondown>9004</ondown>
+                    <label>-</label>
                 </control>
                 <control type="button" id="9004">
                     <posx>16</posx>
@@ -215,29 +194,12 @@ if not connection:
                     <textureclick border="30">button_action_menu_source_click.png</textureclick>
                     <font>title22b</font>
                     <label>CONNECT</label>
-                    <onup>9001</onup>
-                    <ondown>-</ondown>
+                    <onup>9003</onup>
+                    <ondown>200</ondown>
                     <onleft>9006</onleft>
                     <onright>9005</onright>
                     <onclick lang="python"><![CDATA[
-WINDOW.GetControl(9008).SetVisible(True)
-address = WINDOW.GetEdit(9001).GetText()
-# user = WINDOW.GetEdit(9002).GetText()
-# pass = WINDOW.GetEdit(9003).GetText()
-for name, client in TORRENT_CLIENTS.items():
-    connection = create_connection(client, url=address)
-    if connection:
-        print "Created connection to %s successfully." % name
-        CONFIG.SetValue('client_name', name)
-        CONFIG.SetValue('client_address', address)
-        # CONFIG.SetValue('client_user', user)
-        # CONFIG.SetValue('client_pass', pass)
-        WINDOW.PopState()
-        mc.CloseWindow()
-        break
-WINDOW.GetControl(9008).SetVisible(False)      
-if not connection:
-    mc.ShowDialogOk("Connection failed", "Could not connect to any torrent clients with the provided information.")  
+do_connect()
 ]]></onclick>
                 </control>
                 <control type="button" id="9005">
@@ -254,14 +216,12 @@ if not connection:
                     <textureclick border="30">button_action_menu_source_click.png</textureclick>
                     <font>title22b</font>
                     <label>QUIT</label>
-                    <onup>9001</onup>
-                    <ondown>-</ondown>
+                    <onup>9003</onup>
+                    <ondown>200</ondown>
                     <onleft>9004</onleft>
                     <onright>9006</onright>
                     <onclick lang="python"><![CDATA[
-PARENT_WINDOW.PopState()
-mc.CloseWindow()
-mc.CloseWindow()
+close_ui()
 ]]></onclick>
                 </control>
                 <control type="multiimage" id="9008">
@@ -270,6 +230,143 @@ mc.CloseWindow()
                     <posy>245</posy> 
                     <include>Loading_Animation</include>
                 </control>
+            </control>
+            <!-- List of found clients -->
+            <control type="group">
+                <posx>490</posx>
+                <posy>280</posy>
+                <width>600</width>
+                <height>190</height>
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>610</width>
+                    <height>220</height>
+                    <texture border="64">action_menu_bg.png</texture>
+                </control>
+                <control type="list" id="200">
+                    <posx>15</posx>
+                    <posy>20</posy>
+                    <width>580</width>
+                    <height>180</height>
+                    <onup>9004</onup>
+                    <ondown>9001</ondown>
+                    <onleft>9006</onleft>
+                    <onright>9005</onright>
+                    <pagecontrol>-</pagecontrol>
+                    <orientation>vertical</orientation>
+                    <scrolltime>200</scrolltime>
+                    <itemlayout width="565" height="40">
+                        <control type="image">
+                            <posx>10</posx>
+                            <posy>4</posy>
+                            <width>32</width>
+                            <height>32</height>
+                            <texture>$INFO[ListItem.property(custom:type)]_icon.png</texture>
+                        </control>
+                        <control type="label">
+                            <posx>60</posx>
+                            <posy>4</posy>
+                            <width>460</width>
+                            <height>32</height>
+                            <font>font24</font>
+                            <align>left</align>
+                            <aligny>center</aligny>
+                            <textcolor>white</textcolor>
+                            <label>$INFO[ListItem.Label]</label>
+                        </control>
+                        <control type="image">
+                            <posx>532</posx>
+                            <posy>4</posy>
+                            <width>32</width>
+                            <height>32</height>
+                            <texture>lock.png</texture>
+                            <visible>ListItem.property(custom:auth)</visible>
+                        </control>
+                    </itemlayout>
+                    <focusedlayout width="565" height="40">
+                        <control type="image">
+                            <posx>-4</posx>
+                            <posy>-8</posy>
+                            <width>580</width>
+                            <height>56</height>
+                            <visible>Control.HasFocus(200)</visible>
+                            <texture border="32">button_action_menu_source_on.png</texture>
+                        </control>
+                        <control type="image">
+                            <posx>10</posx>
+                            <posy>4</posy>
+                            <width>32</width>
+                            <height>32</height>
+                            <texture>$INFO[ListItem.property(custom:type)]_icon.png</texture>
+                        </control>
+                        <control type="label">
+                            <posx>60</posx>
+                            <posy>4</posy>
+                            <width>460</width>
+                            <height>32</height>
+                            <font>font24</font>
+                            <align>left</align>
+                            <aligny>center</aligny>
+                            <textcolor>white</textcolor>
+                            <label>$INFO[ListItem.Label]</label>
+                            <scroll>Control.HasFocus(700)</scroll>
+                        </control>
+                        <control type="image">
+                            <posx>532</posx>
+                            <posy>4</posy>
+                            <width>32</width>
+                            <height>32</height>
+                            <texture>lock.png</texture>
+                            <visible>ListItem.property(custom:auth)</visible>
+                        </control>
+                    </focusedlayout>
+                    <content type="url">
+                        <onclick lang="python"><![CDATA[
+select_client()
+]]></onclick>
+                    </content>
+                </control>
+            </control>
+            <!-- LOG aka STATUS -->
+            <control type="list" id="700">
+                <visible>true</visible>
+                <posx>40</posx>
+                <posy>300</posy>
+                <width>600</width>
+                <height>200</height>
+                <orientation>vertical</orientation>
+                <itemlayout width="550" height="25">
+                    <control type="label">
+                        <posx>10</posx>
+                        <posy>5</posy>
+                        <width>500</width>
+                        <height>24</height>
+                        <font>title24</font>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <textcolor>white</textcolor>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                </itemlayout>
+                <focusedlayout width="550" height="25">
+                    <control type="label">
+                        <posx>10</posx>
+                        <posy>5</posy>
+                        <width>500</width>
+                        <height>24</height>
+                        <font>title24</font>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <textcolor>white</textcolor>
+                        <label>$INFO[ListItem.Label]</label>
+                        <scroll>Control.HasFocus(700)</scroll>
+                    </control>
+                </focusedlayout>
+                <content type="url">
+                    <onclick type="python"><![CDATA[
+]]></onclick>
+                </content>
             </control>
         </control>
         <control type="multiimage" id="3000"> 

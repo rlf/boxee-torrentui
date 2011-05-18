@@ -6,7 +6,33 @@ CONFIG = mc.GetApp().GetLocalConfig()
 WINDOW = mc.GetWindow(14002)
 TORRENT_LIST = WINDOW.GetList(100)
 STATUS = WINDOW.GetLabel(105)
+REFRESH_EVERY = 10 # every 20 seconds
 
+def timer_update(ui):
+    """ Function accessible from the threading.Timer class.
+    """
+    ui.update_list()
+
+
+def start_status_update(ui):
+    ev = threading.Event()
+    thread = threading.Thread(target=status_update, args=(ui, ev))
+    thread.start()
+
+def status_update(ui, ev):
+    """ Updates the status bar (including count-down of next refresh)
+    """
+    while True:
+        t = time.time()
+        diff = ui.last_update + REFRESH_EVERY - t
+        if diff < 0:
+            diff = 0
+        WINDOW.GetLabel(111).SetLabel("Last refresh was at %s, next in %.0f seconds" % (time.strftime("%H:%M:%S", time.gmtime(ui.last_update)), diff))
+        t2 = time.time()
+        d = t2 - t
+        if ev.isSet():
+            break
+        ev.wait(1 - d) # Every second
 
 class TorrentConnectionError(Exception): pass
 
@@ -25,6 +51,8 @@ class TorrentUI(threading.Thread):
     '''
     order = "alphabetical"
     stored_order = CONFIG.GetValue('order')
+    last_update = 0
+
     if stored_order:
         order = stored_order
     
@@ -39,7 +67,7 @@ class TorrentUI(threading.Thread):
         
         # Start updating the torrent list.
         self.update_list(firstrun=True)
-
+        start_status_update(self)
     
     def get_status(self):
         '''
@@ -154,7 +182,7 @@ class TorrentUI(threading.Thread):
         Creates a ListItem from a torrent dict. Used when adding torrents to
         the list.
         '''
-        item = mc.ListItem(mc.ListItem.MEDIA_FILE)
+        item = mc.ListItem(mc.ListItem.MEDIA_UNKNOWN)
         item.SetLabel(torrent['label'])
         item = self.update_item_from_torrent(item, torrent)
         self.refresh_list = True
@@ -200,20 +228,23 @@ class TorrentUI(threading.Thread):
                     torrent['size_uploaded'],
                     torrent['ratio']
                 )
+                description2 = "Finished"
             else:
-                description1 = "%s of %s (%s)" % (
+                description1 = "%s of %s (%s) Ratio %s" % (
                     torrent['size_downloaded'],
                     torrent['size_total'],
-                    '%s%%' % torrent['percent_done']
+                    '%s%%' % torrent['percent_done'],
+                    torrent['ratio']
                 )
-            description2 = "Paused"
+                description2 = "Paused"
         # Attach things to the ListItem for later use.
         item.SetProperty("transfer_status", torrent['status'])
         item.SetProperty("id", torrent['id'])
         item.SetDescription(description1)
         item.SetProperty("progress_bar", str(int(round(torrent['percent_done'], -1))) )
         item.SetTagLine(description2)
-        
+        item.SetContentType("application/x-bittorrent")
+        item.SetThumbnail("http://www.lockfuglsang.dk/boxee/torrents.png")
         return item
 
 
@@ -222,6 +253,10 @@ class TorrentUI(threading.Thread):
         Main function for updating the torrent list. Usually run in a loop.
         Gets torrents, makes ListItems out of them and populates the list.
         '''
+        # Schedule the next update
+        timer = threading.Timer(REFRESH_EVERY, timer_update, [self])
+        timer.start()
+        t1 = time.time()
         # Set true when the list needs to be refresh because of added torrents
         self.refresh_list = False
         
@@ -239,12 +274,10 @@ class TorrentUI(threading.Thread):
                 WINDOW.GetControl(2000).SetVisible(True)
                 WINDOW.GetLabel(2001).SetLabel(status['global_download'])
                 WINDOW.GetLabel(2002).SetLabel(status['global_upload'])
-            except:
+            except Exception, e:
                 raise Exception("Killing the TorrentUI thread.")
+
         else:
-            # Wait for 2 seconds, this will later be switched to a var that
-            # can be changed by the user.
-            time.sleep(5.0)
             
             # List of current items.
             try:
@@ -316,9 +349,8 @@ class TorrentUI(threading.Thread):
                 
         STATUS.SetVisible(False)
         WINDOW.GetControl(3000).SetVisible(False)
-        # Do it all again.
-        self.update_list()
-    
+        t2 = time.time()
+        self.last_update = t2
     
     def sort_torrents(self, sort_type):
         items_dict = {}

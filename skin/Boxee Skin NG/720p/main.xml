@@ -2,46 +2,18 @@
 <window type="window" id="14002">
     <defaultcontrol always="true">100</defaultcontrol>
     <onload lang="python"><![CDATA[ 
-from connect import mc, create_connection, APP, CONFIG, WINDOW, TORRENT_CLIENTS, TORRENT_LIST
-
-STATUS = WINDOW.GetLabel(105)
-
-STATUS.SetLabel("Checking for saved connections...")
-
-params = mc.Parameters()
-params['client_name'] = CONFIG.GetValue('client_name')
-params['client_address'] = CONFIG.GetValue('client_address')
-params['client_user'] = CONFIG.GetValue('client_user')
-params['client_pass'] = CONFIG.GetValue('client_pass')
-
-client = params['client_name']
-print "OnLoad connection to %s with url %s" % (params['client_name'], params['client_address']) 
-if client:
-    STATUS.SetLabel("Connecting to %s" % client)
-    client = TORRENT_CLIENTS[params['client_name']]
-    connection = create_connection(client, url=params['client_address'], 
-                                            username=params['client_user'], 
-                                            password=params['client_pass'])
-    if not connection:
-        STATUS.SetLabel("Connection failed, launching configuration.")
-        WINDOW.PushState()
-        APP.ActivateWindow(14003, params)
-    else:
-        print "Got connection"
-        STATUS.SetVisible(False)
-
-else:
-    STATUS.SetLabel("No client found, launching configuration.")
-    WINDOW.PushState()
-    APP.ActivateWindow(14003, params)
+from connect import mc, WINDOW, TORRENT_LIST
+from main_ui import load_ui, show_options, do_start, do_delete, do_stop, show_config
+load_ui()
 ]]></onload>
     <allowoverlay>no</allowoverlay>
     <controls>
         <include>Common_Background</include>
         <include>Bottom_Feather</include>
         <include>Common_Status</include>
+        <!-- UP and DOWN speed panel -->
         <control type="group" id="2000">
-            <posx>780</posx>
+            <posx>700</posx>
             <posy>65</posy>
             <visible>false</visible>
             <control type="image">
@@ -78,8 +50,33 @@ else:
                 <label></label>
                 <textcolor>grey</textcolor>
             </control>
+            <control type="button" id="2502">
+                <posx>480</posx>
+                <posy>10</posy>
+                <width>40</width>
+                <height>40</height>
+                <texturenofocus>config.png</texturenofocus>
+                <texturefocus>config_over.png</texturefocus>
+                <texturefocus border="30">button_action_menu_source_on.png</texturefocus>
+                <ondown>100</ondown>
+                <onup>100</onup>
+                <onleft>100</onleft>
+                <onright>100</onright>
+                <onclick lang="python"><![CDATA[
+show_config()
+]]></onclick>
+            </control>
         </control>
         <control type="group" id="9000">
+            <control type="label" id="111">
+                <posx>5</posx>
+                <posy>700</posy>
+                <width>1260</width>
+                <height>20</height>
+                <font>font18</font>
+                <textcolor>grey</textcolor>
+                <label></label>
+            </control>
             <control type="label">
 				<include>BrowseMainTitle</include>
 				<label>TORRENTS</label>
@@ -108,11 +105,11 @@ else:
                 <posx>59</posx>
                 <posy>110</posy>
                 <width>1280</width>
-                <height>610</height>
+                <height>580</height>
                 <onleft>-</onleft>
                 <onright>-</onright>
-                <onup>-</onup>
-                <ondown>-</ondown>
+                <onup>2502</onup>
+                <ondown>2502</ondown>
                 <scrolltime>200</scrolltime>
                 <pagecontrol>-</pagecontrol>
                 <orientation>vertical</orientation>
@@ -168,6 +165,7 @@ else:
                         <posy>10</posy>
                         <width>1162</width>
                         <height>135</height>
+                        <colordiffuse>FFFFFFFF</colordiffuse>
                         <texture>active_item_bg.png</texture>
                     </control>
                     <control type="label">
@@ -214,15 +212,7 @@ else:
                 </focusedlayout>
                 <content type="url">
                     <onclick lang="python"><![CDATA[
-WINDOW.PushState()
-listitem = TORRENT_LIST.GetItem(TORRENT_LIST.GetFocusedItem())
-if listitem.GetProperty("transfer_status") == 'Paused':
-    option = 4001
-elif listitem.GetProperty("transfer_status") in ['Downloading', 'Seeding']:
-    option = 4002
-WINDOW.GetControl(option).SetVisible(True)
-WINDOW.GetControl(option).SetFocus()
-WINDOW.GetControl(4000).SetVisible(True)
+show_options()
 ]]></onclick>
                 </content>
             </control>
@@ -241,6 +231,14 @@ WINDOW.GetControl(4000).SetVisible(True)
                     <height>205</height>
                     <texture>torrent_option_box.png</texture>
                 </control>
+                <control type="label" id="4007">
+                    <posx>322</posx>
+                    <posy>270</posy>
+                    <width>600</width>
+                    <height>30</height>
+                    <font>font22b</font>
+                    <label></label>
+                </control>
                 <control type="group" id="4001">
                     <visible>false</visible>
                     <posx>380</posx>
@@ -258,11 +256,7 @@ WINDOW.GetControl(4000).SetVisible(True)
                         <onleft>4004</onleft>
                         <onright>4004</onright>
                         <onclick lang="python"><![CDATA[
-pk = TORRENT_LIST.GetFocusedItem()
-WINDOW.PopState()
-TORRENT_LIST.SetFocusedItem(pk)
-listitem = TORRENT_LIST.GetItem(pk)
-connection.start_torrent(listitem.GetProperty('id'))
+do_start()
 ]]></onclick>
                     </control>
                     <control type="button" id="4004">
@@ -278,12 +272,7 @@ connection.start_torrent(listitem.GetProperty('id'))
                         <onleft>4003</onleft>
                         <onright>4003</onright>
                         <onclick lang="python"><![CDATA[
-pk = TORRENT_LIST.GetFocusedItem()
-WINDOW.PopState()
-TORRENT_LIST.SetFocusedItem(pk)
-listitem = TORRENT_LIST.GetItem(pk)
-connection.delete_torrent(listitem.GetProperty('id'))
-
+do_delete()
 ]]></onclick>
                     </control>
                 </control>
@@ -304,12 +293,7 @@ connection.delete_torrent(listitem.GetProperty('id'))
                         <onleft>4006</onleft>
                         <onright>4006</onright>
                         <onclick lang="python"><![CDATA[
-pk = TORRENT_LIST.GetFocusedItem()
-WINDOW.PopState()
-TORRENT_LIST.SetFocusedItem(pk)
-listitem = TORRENT_LIST.GetItem(pk)
-connection.stop_torrent(listitem.GetProperty('id'))
-
+do_stop()
 ]]></onclick>
                     </control>
                     <control type="button" id="4006">
@@ -325,11 +309,7 @@ connection.stop_torrent(listitem.GetProperty('id'))
                         <onleft>4005</onleft>
                         <onright>4005</onright>
                         <onclick lang="python"><![CDATA[
-pk = TORRENT_LIST.GetFocusedItem()
-WINDOW.PopState()
-TORRENT_LIST.SetFocusedItem(pk)
-listitem = TORRENT_LIST.GetItem(pk)
-connection.delete_torrent(listitem.GetProperty('id'))
+do_delete()
 ]]></onclick>
                     </control>
                 </control>

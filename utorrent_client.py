@@ -90,6 +90,8 @@ class uTorrent(HTTPConnection):
 
 	#	will be happy as long as you feed it valid uTorrent WebUI details
 	def __init__(self, host='localhost', port='8080', username='default', password='default'):
+		self.host = host
+		self.port = port
 		try:
 			HTTPConnection.__init__(self, host, int(port))
 			self.connect()
@@ -99,6 +101,11 @@ class uTorrent(HTTPConnection):
 
 		self.username = username
 		self.password = password
+
+	def get_url(self):
+		if not self.host.find(':'):
+			return "http://%s:%s" % (self.host, self.port)
+		return "%s:%s" % (self.host, self.port)
 
 	#	creates an HTTP Basic Authentication token
 	def webui_identity(self):

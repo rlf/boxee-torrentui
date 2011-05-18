@@ -8,23 +8,36 @@ import sys
 import socket
 socket.setdefaulttimeout(30)
 import urllib2
-
+import base64
+from urlparse import urlsplit, urlunsplit
+from common import AuthenticationFailure
 
 class TransmissionClientFailure(Exception): pass
 
 class TransmissionClient(object):
-  
     rpcUrl = None
     headers = {}
 
-
-    def __init__( self, rpcUrl='http://localhost:9091'):
+    def __init__( self, rpcUrl='http://localhost:9091', username=None, password=None):
         """ try to do a stupid call to transmission via rpc """
 
+        self.username = username
+        self.password = password
+        if username:
+            usrpw = "%s:%s" % (username, password)
+            b64encoded = base64.b64encode(usrpw)
+            self.headers['Authorization'] = 'Basic ' + b64encoded
         try:
             self.rpcUrl = rpcUrl
             if not self.rpcUrl.endswith("/transmission/rpc"):
                 self.rpcUrl = '%s/transmission/rpc' % rpcUrl 
+            if not self.rpcUrl.startswith('http:'):
+                self.rpcUrl = 'http://%s' % self.rpcUrl
+            scheme, nwloc, path, query, fragment = urlsplit(self.rpcUrl)
+            if nwloc.find(':') == -1:
+                nwloc += ':9091'
+                self.rpcUrl = urlunsplit((scheme, nwloc, path, query, fragment))
+            print "Trying: %s" % self.rpcUrl
             req = urllib2.Request( self.rpcUrl , {}, self.headers)
             response = urllib2.urlopen(req)
             response = response.read()
@@ -37,11 +50,16 @@ class TransmissionClient(object):
                 req = urllib2.Request( self.rpcUrl , {}, self.headers)
                 response = urllib2.urlopen(req)
                 response = response.read()
+            elif e.code == 401:
+                raise AuthenticationFailure, "The transmission-daemon is running, but requires authentication!"
             else:
                 raise Exception('HTTPError: %s' % e.code )
         except Exception, e:
             raise TransmissionClientFailure, "Make sure your transmission-daemon is running %s" % e
 
+
+    def get_url(self):
+        return self.rpcUrl
 
     def _rpc( self, method, params={} ):
         """ generic rpc call to transmission """
@@ -61,6 +79,8 @@ class TransmissionClient(object):
             if e.code == 409:
                 self.headers['X-Transmission-Session-Id'] = e.info()['X-Transmission-Session-Id']
                 return self._rpc(method, params)
+            elif e.code == 401:
+                raise AuthenticationFailure, "The transmission-daemon is running, but requires authentication!"
             else:
                 raise Exception('HTTPError: %s' % e.code )
             

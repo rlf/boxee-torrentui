@@ -156,6 +156,7 @@ class SCGIRequest(object):
         xmlresp = fresp.read()
         return (xmlresp, headers)
 
+# TODO: Add support for username & password
 class RTorrentXMLRPCClient(object):
     """
     The following is an exmple of how to use this class.
@@ -166,13 +167,19 @@ class RTorrentXMLRPCClient(object):
             print "%s has a ratio of over 0.5"%(rtc.d.get_name(infohash))
     """
     
-    def __init__(self, url, methodname=''):
+    def __init__(self, url, username=None, password=None, methodname=''):
         self.url = url
         self.methodname = methodname
     
+    def get_url(self):
+        scheme, netloc, path, query, frag = urlparse.urlsplit(self.url)
+        if not scheme == 'scgi':
+            scheme = 'scgi'
+        return urlparse.urlunsplit((scheme, netloc, path, query, frag))
+
     def __call__(self, *args):
         #~ print "%s%r"%(self.methodname, args)
-        scheme, netloc, path, query, frag = urlparse.urlsplit(self.url)
+        scheme, netloc, path, query, frag = urlparse.urlsplit(self.get_url())
         xmlreq = xmlrpclib.dumps(args, self.methodname)
         if scheme == 'scgi':
             xmlresp = SCGIRequest(self.url).send(xmlreq)

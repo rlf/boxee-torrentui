@@ -1,14 +1,16 @@
 <app>
-  <id>torrentui</id>
-  <name>Torrent Downloads</name>
-  <version>0.8</version>
+  <id>dk.lockfuglsang.torrentui</id>
+  <name>Torrent UI</name>
+  <version>0.9</version>
   <description>Boxee UI for torrent downloads</description>
-  <thumb>http://joshuajonah.com/torrentsicon.png</thumb>
+  <thumb>http://www.lockfuglsang.dk/boxee/torrents.png</thumb>
+  <repositoryId>dk.lockfuglsang</repositoryId>
+  <repository>http://www.lockfuglsang.dk/boxee</repository>
   <media>video</media>
   <copyright>joshuajonah</copyright>
   <email>josh@joshuajonah.com</email>
   <type>skin</type>
   <startWindow>14002</startWindow>
-  <platform>mac,linux</platform>
+  <platform>all</platform>
   <minversion>0.9.12</minversion>
 </app>
